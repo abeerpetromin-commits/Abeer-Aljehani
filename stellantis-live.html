@@ -314,7 +314,26 @@ function fetchSheet(gid) {
     fetch(url)
       .then(r => r.text())
       .then(text => {
-        const result = Papa.parse(text, {
+        // Split into lines
+        const lines = text.split('\n').filter(l => l.trim());
+        if (lines.length < 2) return resolve([]);
+
+        // Check if first row has merged data (very long header keys)
+        const firstRow = lines[0];
+        const firstKeys = Papa.parse(firstRow, {header: false}).data[0] || [];
+        const hasLongKeys = firstKeys.some(k => k.length > 50);
+
+        let headerLine, dataLines;
+        if (hasLongKeys) {
+          // First row is corrupted — use second row as header
+          headerLine = lines[1];
+          dataLines  = lines.slice(2);
+        } else {
+          headerLine = lines[0];
+          dataLines  = lines.slice(1);
+        }
+
+        const result = Papa.parse([headerLine, ...dataLines].join('\n'), {
           header: true,
           skipEmptyLines: true,
           transformHeader: h => h.trim(),
