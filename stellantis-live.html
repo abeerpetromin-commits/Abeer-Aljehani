@@ -250,7 +250,7 @@ footer{text-align:center;padding:1.25rem;color:var(--text3);font-size:11px;borde
 
 </main>
 
-<footer>Stellantis · Petromin Service Network · Executive Dashboard · Live Data from Google Sheets</footer>
+<footer>Stellantis · Petromin Service Network · Executive Dashboard · Live Data from Google Sheets · Created by Team Leader : Abeer Aljehani</footer>
 
 <script>
 const SHEET_ID = '1aB2Uu84kShS3gdUMbqyaPD8pnhAYeyx3r7HDKjPtb8U';
@@ -268,13 +268,21 @@ let donutChart = null;
 // Parse date
 function parseDate(s) {
   if (!s) return null;
-  // Handle "January 3, 2026 8:32 pm" format
   const cleaned = s.toString().trim();
-  const d = new Date(cleaned);
-  if (!isNaN(d)) return d;
-  // Try extracting date part only
-  const match = cleaned.match(/([A-Za-z]+ \d+,? \d{4})/);
-  if (match) return new Date(match[1]);
+  if (!cleaned) return null;
+  // Try direct parse first
+  let d = new Date(cleaned);
+  if (!isNaN(d.getTime())) return d;
+  // Handle "January 3, 2026 8:32 pm" → remove time part
+  const noTime = cleaned.replace(/\d+:\d+\s*(am|pm)/i, '').trim();
+  d = new Date(noTime);
+  if (!isNaN(d.getTime())) return d;
+  // Extract "Month DD, YYYY"
+  const match = cleaned.match(/([A-Za-z]+ \d{1,2},?\s*\d{4})/);
+  if (match) { d = new Date(match[1]); if (!isNaN(d.getTime())) return d; }
+  // Handle "DD/MM/YYYY" or "MM/DD/YYYY"
+  const slash = cleaned.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (slash) return new Date(`${slash[3]}-${slash[2].padStart(2,'0')}-${slash[1].padStart(2,'0')}`);
   return null;
 }
 
@@ -368,7 +376,10 @@ function render() {
   const { from, to } = getFilters();
 
   // Filter data
-  const web = RAW.website.filter(r => inRange(r[SHEETS.website.dateCol], from, to));
+  const web = RAW.website.filter(r => {
+    const dateVal = r['Request Date'] || r['request date'] || r['RequestDate'] || '';
+    return inRange(dateVal, from, to);
+  });
   const sf  = RAW.salesforce.filter(r => inRange(r[SHEETS.salesforce.dateCol], from, to));
   const km  = RAW.km1.filter(r => inRange(r[SHEETS.km1.dateCol], from, to));
   const pms = RAW.pms.filter(r => inRange(r[SHEETS.pms.dateCol], from, to));
@@ -556,14 +567,18 @@ async function loadAll() {
   render();
 }
 
-// Set default dates (current month)
+// Set default dates (2026 only)
 window.addEventListener('DOMContentLoaded', () => {
-  const now   = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth(), 1);
-  document.getElementById('dateFrom').value = first.toISOString().split('T')[0];
-  document.getElementById('dateTo').value   = now.toISOString().split('T')[0];
+  const fromInput = document.getElementById('dateFrom');
+  const toInput   = document.getElementById('dateTo');
+  fromInput.min = '2026-01-01';
+  fromInput.max = '2026-12-31';
+  toInput.min   = '2026-01-01';
+  toInput.max   = '2026-12-31';
+  fromInput.value = '2026-01-01';
+  toInput.value   = '2026-12-31';
   loadAll();
-  setInterval(loadAll, 3 * 60 * 1000); // auto-refresh every 3 min
+  setInterval(loadAll, 3 * 60 * 1000);
 });
 </script>
 </body>
