@@ -270,19 +270,22 @@ function parseDate(s) {
   if (!s) return null;
   const cleaned = s.toString().trim();
   if (!cleaned) return null;
-  // Try direct parse first
-  let d = new Date(cleaned);
-  if (!isNaN(d.getTime())) return d;
-  // Handle "January 3, 2026 8:32 pm" → remove time part
-  const noTime = cleaned.replace(/\d+:\d+\s*(am|pm)/i, '').trim();
-  d = new Date(noTime);
-  if (!isNaN(d.getTime())) return d;
-  // Extract "Month DD, YYYY"
-  const match = cleaned.match(/([A-Za-z]+ \d{1,2},?\s*\d{4})/);
-  if (match) { d = new Date(match[1]); if (!isNaN(d.getTime())) return d; }
-  // Handle "DD/MM/YYYY" or "MM/DD/YYYY"
-  const slash = cleaned.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (slash) return new Date(`${slash[3]}-${slash[2].padStart(2,'0')}-${slash[1].padStart(2,'0')}`);
+
+  // Format: "12/02/2026" → DD/MM/YYYY
+  const slashDMY = cleaned.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (slashDMY) {
+    return new Date(`${slashDMY[3]}-${slashDMY[2].padStart(2,'0')}-${slashDMY[1].padStart(2,'0')}`);
+  }
+
+  // Format: "January 3, 2026 8:32 pm" → remove time, parse month name
+  const monthName = cleaned.replace(/\d{1,2}:\d{2}\s*(am|pm)/i, '').trim().replace(/,\s*$/, '');
+  const d1 = new Date(monthName);
+  if (!isNaN(d1.getTime())) return d1;
+
+  // Direct parse fallback
+  const d2 = new Date(cleaned);
+  if (!isNaN(d2.getTime())) return d2;
+
   return null;
 }
 
@@ -387,7 +390,10 @@ function render() {
 
   // ── WEBSITE ──
   const webTotal    = web.length;
-  const webAnswered = web.filter(r => (r['Status']||'').trim() === 'Answered').length;
+  const webAnswered = web.filter(r => {
+    const s = (r['Status']||'').trim();
+    return s === 'Answered' || s === 'Answer';
+  }).length;
   const webNoAns    = web.filter(r => (r['Status']||'').trim() === 'No Answer').length;
   const webBooked   = web.filter(r => (r['Booked?']||'').trim() === 'Yes').length;
   const webNotBook  = web.filter(r => (r['Booked?']||'').trim() === 'No').length;
