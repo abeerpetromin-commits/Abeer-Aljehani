@@ -307,19 +307,19 @@ function inRange(dateVal, from, to) {
   return true;
 }
 
-// Fetch CSV via gviz — row 0 is added by gviz, row 1 is the real header
+// Fetch CSV via direct export
 function fetchSheet(gid) {
   return new Promise((resolve) => {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
     fetch(url)
       .then(r => r.text())
       .then(text => {
         const raw = Papa.parse(text, { header: false, skipEmptyLines: true });
         const rows = raw.data;
-        if (rows.length < 3) return resolve([]);
-        // Row 0: gviz extra row, Row 1: real headers, Row 2+: data
-        const headers = rows[1].map(h => h.trim());
-        const result = rows.slice(2).map(row => {
+        if (rows.length < 2) return resolve([]);
+        // Row 0 is real header, Row 1+ is data
+        const headers = rows[0].map(h => h.trim());
+        const result = rows.slice(1).map(row => {
           const obj = {};
           headers.forEach((h, i) => { obj[h] = (row[i] || '').trim(); });
           return obj;
