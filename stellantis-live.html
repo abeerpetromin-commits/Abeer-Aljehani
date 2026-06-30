@@ -370,9 +370,10 @@ function render() {
 
   // ── WEBSITE ──
   const webTotal    = web.length;
-  const webAnswered = count(web, 'Status', 'Answered') || countIn(web, 'Status', ['answered','answer']);
-  const webBooked   = count(web, 'Booked?', 'Yes') || count(web, 'Booked', 'Yes');
-  const webNotBook  = count(web, 'Booked?', 'No') || count(web, 'Booked', 'No');
+  const webAnswered = web.filter(r => (r['Status']||'').trim() === 'Answered').length;
+  const webNoAns    = web.filter(r => (r['Status']||'').trim() === 'No Answer').length;
+  const webBooked   = web.filter(r => (r['Booked?']||'').trim() === 'Yes').length;
+  const webNotBook  = web.filter(r => (r['Booked?']||'').trim() === 'No').length;
   const webBookPct  = webAnswered ? Math.round((webBooked/webAnswered)*100) : 0;
 
   document.getElementById('kWebTotal').textContent   = webTotal.toLocaleString();
@@ -385,9 +386,8 @@ function render() {
     funnelBar('Booked', webBooked, webTotal, '#0f8a52') +
     funnelBar('Not Booked', webNotBook, webTotal, '#94a3b8');
 
-  const webNotArr = web.filter(r => (r['Booked?']||r['Booked']||'').trim().toLowerCase() === 'no');
-  const webReasCol = 'If no, why?' || 'Reason';
-  const webReasons = topReasons(webNotArr, Object.keys(webNotArr[0]||{}).find(k=>k.toLowerCase().includes('why'))||'If no, why?');
+  const webNotArr = web.filter(r => (r['Booked?']||'').trim() === 'No');
+  const webReasons = topReasons(webNotArr, 'If no, why?');
   document.getElementById('webReasons').innerHTML = barList(webReasons, '#2b9de8');
 
   // ── SALESFORCE ──
