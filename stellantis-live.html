@@ -307,31 +307,21 @@ function inRange(dateVal, from, to) {
   return true;
 }
 
-// Fetch CSV via gviz - use first row as header
+// Fetch CSV via gviz — row 0 is added by gviz, row 1 is the real header
 function fetchSheet(gid) {
   return new Promise((resolve) => {
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
     fetch(url)
       .then(r => r.text())
       .then(text => {
-        // Parse without header first to inspect rows
         const raw = Papa.parse(text, { header: false, skipEmptyLines: true });
         const rows = raw.data;
-        if (rows.length < 2) return resolve([]);
-
-        // Find the header row — it's the first row where cells are SHORT (column names)
-        // The merged row has very long cells, real header has short names
-        let headerRowIndex = 0;
-        for (let i = 0; i < Math.min(5, rows.length); i++) {
-          const maxLen = Math.max(...rows[i].map(c => c.length));
-          if (maxLen < 40) { headerRowIndex = i; break; }
-        }
-
-        const headers = rows[headerRowIndex].map(h => h.trim());
-        const dataRows = rows.slice(headerRowIndex + 1);
-        const result = dataRows.map(row => {
+        if (rows.length < 3) return resolve([]);
+        // Row 0: gviz extra row, Row 1: real headers, Row 2+: data
+        const headers = rows[1].map(h => h.trim());
+        const result = rows.slice(2).map(row => {
           const obj = {};
-          headers.forEach((h, i) => { obj[h] = row[i] || ''; });
+          headers.forEach((h, i) => { obj[h] = (row[i] || '').trim(); });
           return obj;
         });
         resolve(result);
