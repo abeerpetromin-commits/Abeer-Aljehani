@@ -268,8 +268,14 @@ let donutChart = null;
 // Parse date
 function parseDate(s) {
   if (!s) return null;
-  const d = new Date(s);
-  return isNaN(d) ? null : d;
+  // Handle "January 3, 2026 8:32 pm" format
+  const cleaned = s.toString().trim();
+  const d = new Date(cleaned);
+  if (!isNaN(d)) return d;
+  // Try extracting date part only
+  const match = cleaned.match(/([A-Za-z]+ \d+,? \d{4})/);
+  if (match) return new Date(match[1]);
+  return null;
 }
 
 function getFilters() {
@@ -392,8 +398,8 @@ function render() {
 
   // ── SALESFORCE ──
   const sfTotal = sf.length;
-  const sfWon   = count(sf, 'Stuats', 'Closed Won') || count(sf, 'Status', 'Closed Won');
-  const sfLost  = count(sf, 'Stuats', 'Closed Lost') || count(sf, 'Status', 'Closed Lost');
+  const sfWon   = sf.filter(r => (r['Stage']||'').trim() === 'Closed Won').length;
+  const sfLost  = sf.filter(r => (r['Stage']||'').trim() === 'Closed Lost').length;
   const sfWonPct= sfTotal ? Math.round((sfWon/sfTotal)*100) : 0;
 
   document.getElementById('kSFTotal').textContent = sfTotal.toLocaleString();
@@ -405,15 +411,15 @@ function render() {
     funnelBar('Closed Won', sfWon, sfTotal, '#0f8a52') +
     funnelBar('Closed Lost', sfLost, sfTotal, '#d03535');
 
-  const sfLostArr = sf.filter(r => (r['Stuats']||r['Status']||'').trim().toLowerCase().includes('lost'));
-  const sfReasCol = Object.keys(sfLostArr[0]||{}).find(k=>k.toLowerCase().includes('reason'))||'Close lost Reasons';
+  const sfLostArr = sf.filter(r => (r['Stage']||'').trim() === 'Closed Lost');
+  const sfReasCol = 'Sub Stage';
   document.getElementById('sfReasons').innerHTML = barList(topReasons(sfLostArr, sfReasCol), '#d03535');
 
   // ── PMS ──
   const pmsTotal    = pms.length;
-  const pmsAns      = count(pms, 'Status', 'Answer') || count(pms, 'Status', 'Answered');
-  const pmsBooked   = count(pms, 'Booked?', 'Yes') || count(pms, 'Booked', 'Yes');
-  const pmsNotBook  = count(pms, 'Booked?', 'No') || count(pms, 'Booked', 'No');
+  const pmsAns      = pms.filter(r => (r['Status']||'').trim() === 'Answer' || (r['Status']||'').trim() === 'Answered').length;
+  const pmsBooked   = pms.filter(r => (r['Booked?']||'').trim() === 'Yes').length;
+  const pmsNotBook  = pms.filter(r => (r['Booked?']||'').trim() === 'No').length;
   const pmsBookPct  = pmsAns ? Math.round((pmsBooked/pmsAns)*100) : 0;
 
   document.getElementById('kPMSTotal').textContent = pmsTotal.toLocaleString();
@@ -426,15 +432,15 @@ function render() {
     funnelBar('Booked', pmsBooked, pmsTotal, '#0f8a52') +
     funnelBar('Not Booked', pmsNotBook, pmsTotal, '#d03535');
 
-  const pmsNotArr  = pms.filter(r => (r['Booked?']||r['Booked']||'').trim().toLowerCase() === 'no');
-  const pmsReasCol = Object.keys(pmsNotArr[0]||{}).find(k=>k.toLowerCase().includes('why'))||'If no, why?';
+  const pmsNotArr  = pms.filter(r => (r['Booked?']||'').trim() === 'No');
+  const pmsReasCol = 'If no,Why?';
   document.getElementById('pmsReasons').innerHTML = barList(topReasons(pmsNotArr, pmsReasCol, 10), '#e09000');
 
   // ── 1km ──
   const kmTotal   = km.length;
-  const kmAns     = count(km, 'Status', 'Answered') || count(km, 'Status', 'Answer');
-  const kmBooked  = count(km, 'Booked?', 'Yes') || count(km, 'Booked', 'Yes');
-  const kmNotBook = count(km, 'Booked?', 'No') || count(km, 'Booked', 'No');
+  const kmAns     = km.filter(r => (r['Status']||'').trim() === 'Answered' || (r['Status']||'').trim() === 'Answer').length;
+  const kmBooked  = km.filter(r => (r['Booked?']||'').trim() === 'Yes').length;
+  const kmNotBook = km.filter(r => (r['Booked?']||'').trim() === 'No').length;
 
   document.getElementById('k1kmTotal').textContent = kmTotal.toLocaleString();
   document.getElementById('k1kmSub').textContent   = `${kmAns} answered (${kmTotal?Math.round(kmAns/kmTotal*100):0}%)`;
@@ -446,8 +452,8 @@ function render() {
     funnelBar('Booked', kmBooked, kmTotal, '#0f8a52') +
     funnelBar('Not Booked', kmNotBook, kmTotal, '#94a3b8');
 
-  const kmNotArr  = km.filter(r => (r['Booked?']||r['Booked']||'').trim().toLowerCase() === 'no');
-  const kmReasCol = Object.keys(kmNotArr[0]||{}).find(k=>k.toLowerCase().includes('why'))||'If no, why?';
+  const kmNotArr  = km.filter(r => (r['Booked?']||'').trim() === 'No');
+  const kmReasCol = 'If no, why?';
   document.getElementById('kmReasons').innerHTML = barList(topReasons(kmNotArr, kmReasCol), '#2b9de8');
 
   // ── D+1 (no date filter — use all) ──
