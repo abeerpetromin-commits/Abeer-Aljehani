@@ -250,10 +250,11 @@ footer{text-align:center;padding:1.25rem;color:var(--text3);font-size:11px;borde
 <script>
 const SHEET_ID = '1aB2Uu84kShS3gdUMbqyaPD8pnhAYeyx3r7HDKjPtb8U';
 const SHEETS = {
-  website:    { gid: '0',         dateCol: 'Request Date' },
-  salesforce: { gid: '76431502',  dateCol: 'Created Date' },
-  km1:        { gid: '797427725', dateCol: 'SMS Sending Date' },
-  pms:        { gid: '689615837', dateCol: 'Modified' },
+  website:    { gid: '0',          dateCol: 'Request Date' },
+  salesforce: { gid: '76431502',   dateCol: 'Created Date' },
+  km1:        { gid: '797427725',  dateCol: 'SMS Sending Date' },
+  pms:        { gid: '689615837',  dateCol: 'Modified' },
+  d1:         { gid: '1326391719', dateCol: 'Date' },
 };
 
 // State
@@ -308,6 +309,7 @@ const HEADERS = {
   salesforce: ['Account Name','Stage','Created Date','Mobile (English)','Sub Stage','Substage Reason'],
   km1:        ['SMS Sending Date','Customer Name','Mobile','Email','Brand','Model','Description','Model Year','Status','Booked?','If no, why?','Branch'],
   pms:        ['Customer Name','Mobile','14 DYS SMS Date','30 DYS SMS Date','Brand','Model','Model Year','VIN','Next Service Date','Status','Booked?','Booking Branch','If no,Why?','Modified'],
+  d1:         ['Status','Customer Attented?','If yes? Satisfied?','If not Satisfied, why?','Why didn\'t attend?','Rescheduled?','Why didn\'t reschedule?'],
 };
 
 // Fetch CSV via gviz
@@ -516,7 +518,7 @@ function render() {
   document.getElementById('kD1SatSub').textContent = `${d1Sat} of ${d1Attended} satisfied`;
   document.getElementById('kD1Unsat').textContent  = `${d1Unsat} unsatisfied`;
 
-  document.getElementById('d1Funnel').innerHTML =
+  const _el_d1Funnel = document.getElementById('d1Funnel'); if(_el_d1Funnel) _el_d1Funnel.innerHTML =
     funnelBar('Total Calls', d1Total, d1Total, '#1e6fbf') +
     funnelBar('Answered', d1Ans, d1Total, '#2b9de8') +
     funnelBar('Attended', d1Attended, d1Total, '#0f8a52') +
@@ -525,19 +527,19 @@ function render() {
 
   const d1UnsatArr = d1.filter(r => (r['If yes? Satisfied?']||r['Satisfied?']||'').trim().toLowerCase() === 'no');
   const d1UReasCol = Object.keys(d1UnsatArr[0]||{}).find(k=>k.toLowerCase().includes('not satisfied')||k.toLowerCase().includes('if not'))||'If not Satisfied, why?';
-  document.getElementById('d1UnsatReasons').innerHTML = barList(topReasons(d1UnsatArr, d1UReasCol), '#d03535');
+  const _el_d1UnsatReasons = document.getElementById('d1UnsatReasons'); if(_el_d1UnsatReasons) _el_d1UnsatReasons.innerHTML = barList(topReasons(d1UnsatArr, d1UReasCol), '#d03535');
 
   const d1NotAttArr = d1.filter(r => (r['Customer Attented?']||r['Customer Attended?']||'').trim().toLowerCase() === 'no');
-  document.getElementById('d1NonAttSub').textContent = `${d1NotAtt} customers did not attend`;
+  const _el_d1NonAttSub = document.getElementById('d1NonAttSub'); if(_el_d1NonAttSub) _el_d1NonAttSub.textContent = `${d1NotAtt} customers did not attend`;
   const d1NACol = Object.keys(d1NotAttArr[0]||{}).find(k=>k.toLowerCase().includes("didn't attend")||k.toLowerCase().includes('why not attend'))||"Why didn't attend?";
-  document.getElementById('d1NonAtt').innerHTML = barList(topReasons(d1NotAttArr, d1NACol), '#2b9de8');
+  const _el_d1NonAtt = document.getElementById('d1NonAtt'); if(_el_d1NonAtt) _el_d1NonAtt.innerHTML = barList(topReasons(d1NotAttArr, d1NACol), '#2b9de8');
 
-  document.getElementById('d1ResYes').textContent = d1Res;
-  document.getElementById('d1ResNo').textContent  = d1NotRes;
+  const _el_d1ResYes = document.getElementById('d1ResYes'); if(_el_d1ResYes) _el_d1ResYes.textContent = d1Res;
+  const _el_d1ResNo = document.getElementById('d1ResNo'); if(_el_d1ResNo) _el_d1ResNo.textContent = d1NotRes;
 
   const d1NotResArr = d1.filter(r => (r['Rescheduled?']||'').trim().toLowerCase() === 'no');
   const d1WNRCol = Object.keys(d1NotResArr[0]||{}).find(k=>k.toLowerCase().includes("didn't reschedule")||k.toLowerCase().includes('why not'))||"Why didn't reschedule?";
-  document.getElementById('d1WhyNot').innerHTML = barList(topReasons(d1NotResArr, d1WNRCol), '#d03535');
+  const _el_d1WhyNot = document.getElementById('d1WhyNot'); if(_el_d1WhyNot) _el_d1WhyNot.innerHTML = barList(topReasons(d1NotResArr, d1WNRCol), '#d03535');
 
   // ── ALL ACTIVITIES ──
   // ── ALL BOOKINGS ──
@@ -573,18 +575,19 @@ async function loadAll() {
   document.getElementById('loadingBar').style.display = 'flex';
   document.getElementById('lastUpdated').textContent  = '';
 
-  const [web, sf, km, pms] = await Promise.all([
+  const [web, sf, km, pms, d1data] = await Promise.all([
     fetchSheet(SHEETS.website.gid,    'website'),
     fetchSheet(SHEETS.salesforce.gid, 'salesforce'),
     fetchSheet(SHEETS.km1.gid,        'km1'),
     fetchSheet(SHEETS.pms.gid,        'pms'),
+    fetchSheet(SHEETS.d1.gid,         'd1'),
   ]);
 
   RAW.website    = web;
   RAW.salesforce = sf;
   RAW.km1        = km;
   RAW.pms        = pms;
-  RAW.d1         = web; // placeholder until D+1 sheet provided
+  RAW.d1         = d1data;
 
   document.getElementById('loadingBar').style.display = 'none';
   render();
