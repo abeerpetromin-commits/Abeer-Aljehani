@@ -307,19 +307,39 @@ function inRange(dateVal, from, to) {
   return true;
 }
 
-// Fetch CSV via direct export
-function fetchSheet(gid) {
+// Headers for each sheet (hardcoded based on actual sheet structure)
+const HEADERS = {
+  website:    ['First Name','Last Name','Email','Phone','City','Brand','Request Date','Status','Booked?','If no, why?','Branch'],
+  salesforce: ['Account Name','Stage','Created Date','Mobile (English)','Sub Stage','Substage Reason'],
+  km1:        ['SMS Sending Date','Customer Name','Mobile','Email','Brand','Model','Description','Model Year','Status','Booked?','If no, why?','Branch'],
+  pms:        ['Customer Name','Mobile','14 DYS SMS Date','30 DYS SMS Date','Brand','Model','Model Year','VIN','Next Service Date','Status','Booked?','Booking Branch','If no,Why?','Modified'],
+};
+
+// Fetch CSV via gviz
+function fetchSheet(gid, sheetKey) {
   return new Promise((resolve) => {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
     fetch(url)
       .then(r => r.text())
       .then(text => {
         const raw = Papa.parse(text, { header: false, skipEmptyLines: true });
         const rows = raw.data;
-        if (rows.length < 2) return resolve([]);
-        // Row 0 is real header, Row 1+ is data
-        const headers = rows[0].map(h => h.trim());
-        const result = rows.slice(1).map(row => {
+        if (!rows.length) return resolve([]);
+        
+        // Use hardcoded headers, find first data row
+        const headers = HEADERS[sheetKey] || [];
+        // Skip rows until we find actual data (not header-like rows)
+        let startRow = 0;
+        for (let i = 0; i < Math.min(5, rows.length); i++) {
+          const firstCell = (rows[i][0] || '').trim();
+          // Data rows start with actual names, not column names
+          if (firstCell && !headers.includes(firstCell)) {
+            startRow = i;
+            break;
+          }
+        }
+        
+        const result = rows.slice(startRow).map(row => {
           const obj = {};
           headers.forEach((h, i) => { obj[h] = (row[i] || '').trim(); });
           return obj;
@@ -566,10 +586,10 @@ async function loadAll() {
   document.getElementById('lastUpdated').textContent  = '';
 
   const [web, sf, km, pms] = await Promise.all([
-    fetchSheet(SHEETS.website.gid),
-    fetchSheet(SHEETS.salesforce.gid),
-    fetchSheet(SHEETS.km1.gid),
-    fetchSheet(SHEETS.pms.gid),
+    fetchSheet(SHEETS.website.gid,    'website'),
+    fetchSheet(SHEETS.salesforce.gid, 'salesforce'),
+    fetchSheet(SHEETS.km1.gid,        'km1'),
+    fetchSheet(SHEETS.pms.gid,        'pms'),
   ]);
 
   RAW.website    = web;
