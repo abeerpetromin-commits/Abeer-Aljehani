@@ -254,7 +254,7 @@ const SHEETS = {
   salesforce: { gid: '76431502',   dateCol: 'Created Date' },
   km1:        { gid: '797427725',  dateCol: 'SMS Sending Date' },
   pms:        { gid: '689615837',  dateCol: 'Modified' },
-  d1:         { gid: '1326391719', dateCol: 'Date' },
+  d1:         { gid: '1326391719', dateCol: 'Date Due in' },
 };
 
 // State
@@ -309,7 +309,7 @@ const HEADERS = {
   salesforce: ['Account Name','Stage','Created Date','Mobile (English)','Sub Stage','Substage Reason'],
   km1:        ['SMS Sending Date','Customer Name','Mobile','Email','Brand','Model','Description','Model Year','Status','Booked?','If no, why?','Branch'],
   pms:        ['Customer Name','Mobile','14 DYS SMS Date','30 DYS SMS Date','Brand','Model','Model Year','VIN','Next Service Date','Status','Booked?','Booking Branch','If no,Why?','Modified'],
-  d1:         ['Status','Customer Attented?','If yes? Satisfied?','If not Satisfied, why?','Why didn\'t attend?','Rescheduled?','Why didn\'t reschedule?'],
+  d1:         ['Branch','Date Due in','Customer Name','Phone','Brand','Stuats','Customer Attented?','If yes? Satisfied?','If not Satisfied, why?','Why didn\'t attend?','Rescheduled?','Why didn\'t reschedule?','Booking Branch'],
 };
 
 // Fetch CSV via gviz
@@ -412,7 +412,7 @@ function render() {
   const sf  = RAW.salesforce.filter(r => inRange(r[SHEETS.salesforce.dateCol], from, to));
   const km  = RAW.km1.filter(r => inRange(r[SHEETS.km1.dateCol], from, to));
   const pms = RAW.pms.filter(r => inRange(r[SHEETS.pms.dateCol], from, to));
-  const d1  = RAW.d1;
+  const d1  = RAW.d1.filter(r => inRange(r['Date Due in'], from, to));
 
   // ── WEBSITE ──
   const webTotal    = web.length;
@@ -499,17 +499,17 @@ function render() {
   const kmReasCol = 'If no, why?';
   document.getElementById('kmReasons').innerHTML = barList(topReasons(kmNotArr, kmReasCol), '#2b9de8');
 
-  // ── D+1 (no date filter — use all) ──
+  // ── D+1 ──
   const d1Total    = d1.length;
-  const d1Ans      = count(d1, 'Status', 'Answered') || count(d1, 'Status', 'Answer');
+  const d1Ans      = d1.filter(r => (r['Stuats']||'').trim() === 'Responded').length;
   const d1NoAns    = d1Total - d1Ans;
-  const d1Attended = count(d1, 'Customer Attented?', 'Yes') || count(d1, 'Customer Attended?', 'Yes');
-  const d1NotAtt   = count(d1, 'Customer Attented?', 'No') || count(d1, 'Customer Attended?', 'No');
-  const d1Sat      = count(d1, 'If yes? Satisfied?', 'Yes') || count(d1, 'Satisfied?', 'Yes');
-  const d1Unsat    = count(d1, 'If yes? Satisfied?', 'No') || count(d1, 'Satisfied?', 'No');
+  const d1Attended = d1.filter(r => (r['Customer Attented?']||'').trim() === 'Yes').length;
+  const d1NotAtt   = d1.filter(r => (r['Customer Attented?']||'').trim() === 'No').length;
+  const d1Sat      = d1.filter(r => (r['If yes? Satisfied?']||'').trim() === 'Yes').length;
+  const d1Unsat    = d1.filter(r => (r['If yes? Satisfied?']||'').trim() === 'No').length;
   const d1SatPct   = d1Attended ? Math.round((d1Sat/d1Attended)*100) : 0;
-  const d1Res      = count(d1, 'Rescheduled?', 'Yes');
-  const d1NotRes   = count(d1, 'Rescheduled?', 'No');
+  const d1Res      = d1.filter(r => (r['Rescheduled?']||'').trim() === 'Yes').length;
+  const d1NotRes   = d1.filter(r => (r['Rescheduled?']||'').trim() === 'No').length;
 
   document.getElementById('kD1Total').textContent  = d1Total.toLocaleString();
   document.getElementById('kD1Sub').textContent    = `${d1Ans} answered (${d1Total?Math.round(d1Ans/d1Total*100):0}%)`;
@@ -525,21 +525,18 @@ function render() {
     funnelBar('Satisfied', d1Sat, d1Total, '#0f6e3d') +
     funnelBar('Unsatisfied', d1Unsat, d1Total, '#d03535');
 
-  const d1UnsatArr = d1.filter(r => (r['If yes? Satisfied?']||r['Satisfied?']||'').trim().toLowerCase() === 'no');
-  const d1UReasCol = Object.keys(d1UnsatArr[0]||{}).find(k=>k.toLowerCase().includes('not satisfied')||k.toLowerCase().includes('if not'))||'If not Satisfied, why?';
-  const _el_d1UnsatReasons = document.getElementById('d1UnsatReasons'); if(_el_d1UnsatReasons) _el_d1UnsatReasons.innerHTML = barList(topReasons(d1UnsatArr, d1UReasCol), '#d03535');
+  const d1UnsatArr  = d1.filter(r => (r['If yes? Satisfied?']||'').trim() === 'No');
+  const _el_d1UnsatReasons = document.getElementById('d1UnsatReasons'); if(_el_d1UnsatReasons) _el_d1UnsatReasons.innerHTML = barList(topReasons(d1UnsatArr, 'If not Satisfied, why?'), '#d03535');
 
-  const d1NotAttArr = d1.filter(r => (r['Customer Attented?']||r['Customer Attended?']||'').trim().toLowerCase() === 'no');
+  const d1NotAttArr = d1.filter(r => (r['Customer Attented?']||'').trim() === 'No');
   const _el_d1NonAttSub = document.getElementById('d1NonAttSub'); if(_el_d1NonAttSub) _el_d1NonAttSub.textContent = `${d1NotAtt} customers did not attend`;
-  const d1NACol = Object.keys(d1NotAttArr[0]||{}).find(k=>k.toLowerCase().includes("didn't attend")||k.toLowerCase().includes('why not attend'))||"Why didn't attend?";
-  const _el_d1NonAtt = document.getElementById('d1NonAtt'); if(_el_d1NonAtt) _el_d1NonAtt.innerHTML = barList(topReasons(d1NotAttArr, d1NACol), '#2b9de8');
+  const _el_d1NonAtt = document.getElementById('d1NonAtt'); if(_el_d1NonAtt) _el_d1NonAtt.innerHTML = barList(topReasons(d1NotAttArr, "Why didn't attend?"), '#2b9de8');
 
   const _el_d1ResYes = document.getElementById('d1ResYes'); if(_el_d1ResYes) _el_d1ResYes.textContent = d1Res;
-  const _el_d1ResNo = document.getElementById('d1ResNo'); if(_el_d1ResNo) _el_d1ResNo.textContent = d1NotRes;
+  const _el_d1ResNo  = document.getElementById('d1ResNo');  if(_el_d1ResNo)  _el_d1ResNo.textContent  = d1NotRes;
 
-  const d1NotResArr = d1.filter(r => (r['Rescheduled?']||'').trim().toLowerCase() === 'no');
-  const d1WNRCol = Object.keys(d1NotResArr[0]||{}).find(k=>k.toLowerCase().includes("didn't reschedule")||k.toLowerCase().includes('why not'))||"Why didn't reschedule?";
-  const _el_d1WhyNot = document.getElementById('d1WhyNot'); if(_el_d1WhyNot) _el_d1WhyNot.innerHTML = barList(topReasons(d1NotResArr, d1WNRCol), '#d03535');
+  const d1NotResArr = d1.filter(r => (r['Rescheduled?']||'').trim() === 'No');
+  const _el_d1WhyNot = document.getElementById('d1WhyNot'); if(_el_d1WhyNot) _el_d1WhyNot.innerHTML = barList(topReasons(d1NotResArr, "Why didn't reschedule?"), '#d03535');
 
   // ── ALL ACTIVITIES ──
   // ── ALL BOOKINGS ──
