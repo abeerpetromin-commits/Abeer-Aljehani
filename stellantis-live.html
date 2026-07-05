@@ -97,7 +97,7 @@ main{max-width:1400px;margin:0 auto;padding:1.5rem 2.5rem}
 .stat-box.grn{background:rgba(15,138,82,0.08);border:1px solid rgba(15,138,82,0.2)}.stat-box.grn .n{color:#0f6e3d}
 .stat-box.red{background:rgba(208,53,53,0.08);border:1px solid rgba(208,53,53,0.2)}.stat-box.red .n{color:#c02020}
 
-footer{text-align:center;padding:1.25rem;color:var(--text3);font-size:11px;border-top:1px solid var(--border);margin-top:0.5rem}
+footer{text-align:center;padding:1.25rem;color:#4a5a72;font-size:11px;border-top:1px solid var(--border);margin-top:0.5rem}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .kpi{animation:fadeUp 0.4s ease both}
@@ -124,6 +124,7 @@ footer{text-align:center;padding:1.25rem;color:var(--text3);font-size:11px;borde
     <label>To</label>
     <input type="date" id="dateTo">
     <button class="btn-apply" onclick="loadAll()">Apply</button>
+    <button class="btn-apply" style="background:#4a5a72;" onclick="loadAll()">🔄 Refresh</button>
     <div class="loading-bar" id="loadingBar" style="display:none">
       <div class="spinner"></div> Loading data...
     </div>
@@ -133,12 +134,12 @@ footer{text-align:center;padding:1.25rem;color:var(--text3);font-size:11px;borde
   <!-- KPIs -->
   <div class="section-label">Key Performance Indicators</div>
   <div class="kpi-grid" id="kpiGrid">
-    <div class="kpi blue"><div class="kpi-date" id="kpiDateLabel">May 2026</div><div class="kpi-label">Website Leads</div><div class="kpi-value" id="kWebTotal">—</div><div class="kpi-sub" id="kWebSub">—</div><div class="kpi-change pos" id="kWebBooked">—</div></div>
-    <div class="kpi blue"><div class="kpi-date" id="kpiDateLabel2">May 2026</div><div class="kpi-label">Salesforce Total</div><div class="kpi-value" id="kSFTotal">—</div><div class="kpi-sub">All CRM records</div><div class="kpi-change pos" id="kSFWon">—</div></div>
-    <div class="kpi blue"><div class="kpi-date" id="kpiDateLabel3">May 2026</div><div class="kpi-label">D+1 Calls</div><div class="kpi-value" id="kD1Total">—</div><div class="kpi-sub" id="kD1Sub">—</div><div class="kpi-change pos" id="kD1Attended">—</div></div>
-    <div class="kpi green"><div class="kpi-date" id="kpiDateLabel4">May 2026</div><div class="kpi-label">D+1 Satisfaction</div><div class="kpi-value" id="kD1Sat">—</div><div class="kpi-sub" id="kD1SatSub">—</div><div class="kpi-change neg" id="kD1Unsat">—</div></div>
-    <div class="kpi blue"><div class="kpi-date" id="kpiDateLabel5">May 2026</div><div class="kpi-label">PMS Calls</div><div class="kpi-value" id="kPMSTotal">—</div><div class="kpi-sub" id="kPMSSub">—</div><div class="kpi-change pos" id="kPMSBook">—</div></div>
-    <div class="kpi blue"><div class="kpi-date" id="kpiDateLabel6">May 2026</div><div class="kpi-label">1km Calls</div><div class="kpi-value" id="k1kmTotal">—</div><div class="kpi-sub" id="k1kmSub">—</div><div class="kpi-change pos" id="k1kmBook">—</div></div>
+    <div class="kpi blue"><div class="kpi-label">Website Leads</div><div class="kpi-value" id="kWebTotal">—</div><div class="kpi-sub" id="kWebSub">—</div><div class="kpi-change pos" id="kWebBooked">—</div></div>
+    <div class="kpi blue"><div class="kpi-label">Salesforce Total</div><div class="kpi-value" id="kSFTotal">—</div><div class="kpi-sub">All CRM records</div><div class="kpi-change pos" id="kSFWon">—</div></div>
+    <div class="kpi blue"><div class="kpi-label">D+1 Calls</div><div class="kpi-value" id="kD1Total">—</div><div class="kpi-sub" id="kD1Sub">—</div><div class="kpi-change pos" id="kD1Attended">—</div></div>
+    <div class="kpi green"><div class="kpi-label">D+1 Satisfaction</div><div class="kpi-value" id="kD1Sat">—</div><div class="kpi-sub" id="kD1SatSub">—</div><div class="kpi-change neg" id="kD1Unsat">—</div></div>
+    <div class="kpi blue"><div class="kpi-label">PMS Calls</div><div class="kpi-value" id="kPMSTotal">—</div><div class="kpi-sub" id="kPMSSub">—</div><div class="kpi-change pos" id="kPMSBook">—</div></div>
+    <div class="kpi blue"><div class="kpi-label">1km Calls</div><div class="kpi-value" id="k1kmTotal">—</div><div class="kpi-sub" id="k1kmSub">—</div><div class="kpi-change pos" id="k1kmBook">—</div></div>
   </div>
 
   <!-- CONVERSION FUNNELS -->
@@ -601,7 +602,6 @@ window.addEventListener('DOMContentLoaded', () => {
   fromInput.value = '2026-01-01';
   toInput.value   = '2026-12-31';
   loadAll();
-  setInterval(loadAll, 3 * 60 * 1000);
 });
 </script>
 </body>
