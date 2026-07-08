@@ -97,7 +97,27 @@ main{max-width:1400px;margin:0 auto;padding:1.5rem 2.5rem}
 .stat-box.grn{background:rgba(15,138,82,0.08);border:1px solid rgba(15,138,82,0.2)}.stat-box.grn .n{color:#0f6e3d}
 .stat-box.red{background:rgba(208,53,53,0.08);border:1px solid rgba(208,53,53,0.2)}.stat-box.red .n{color:#c02020}
 
-footer{text-align:center;padding:1.25rem;color:#4a5a72;font-size:11px;border-top:1px solid var(--border);margin-top:0.5rem}
+/* PIVOT TABLE */
+.pivot-table{width:100%;border-collapse:collapse;font-size:12px;min-width:700px}
+.pivot-table th{background:#1e6fbf;color:#fff;padding:8px 10px;text-align:center;font-weight:600;font-size:11px;white-space:nowrap;position:sticky;top:0}
+.pivot-table th:first-child{text-align:left;min-width:130px}
+.pivot-table td{padding:7px 10px;text-align:center;border-bottom:1px solid var(--border);color:var(--text2)}
+.pivot-table td:first-child{text-align:left;font-weight:500;color:var(--text);background:#fafbfc}
+.pivot-table tr:hover td{background:#f0f4f9}
+.pivot-cell{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;font-weight:700;color:#fff;cursor:pointer;transition:transform 0.1s}
+.pivot-cell:hover{transform:scale(1.15)}
+.pivot-cell.high{background:#e03535}.pivot-cell.mid{background:#f0a500}.pivot-cell.low{background:#f0c040}
+.pivot-total td{background:#fff3f3;font-weight:700;color:#c02020;border-top:2px solid #e03535}
+.pivot-total td:first-child{color:#c02020}
+/* CASE PANEL */
+.case-item{padding:10px 12px;border-radius:8px;border:1px solid var(--border);margin-bottom:8px;background:#fff}
+.case-branch{font-size:11px;font-weight:600;color:var(--blue);margin-bottom:3px}
+.case-customer{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.case-reason{font-size:12px;color:var(--red);margin-bottom:3px}
+.case-comment{font-size:11px;color:var(--text2);font-style:italic}
+.case-meta{font-size:10px;color:var(--text3);margin-top:4px}
+
+footer{text-align:center;padding:1.25rem;color:#4a5a72;font-size:13px;border-top:1px solid var(--border);margin-top:0.5rem}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .kpi{animation:fadeUp 0.4s ease both}
@@ -214,6 +234,21 @@ footer{text-align:center;padding:1.25rem;color:#4a5a72;font-size:11px;border-top
 
   </div>
 
+  <!-- PIVOT: NOT SATISFIED BY BRANCH -->
+  <div class="section-label">Reasons Not Satisfied — Pivot by Branch</div>
+  <div class="card" style="margin-bottom:2rem;overflow-x:auto;">
+    <div class="card-title">D+1 — Not Satisfied Cases</div>
+    <div class="card-sub">Attended → Not satisfied journey · click a number to view case details</div>
+    <div id="pivotTable" style="margin-top:1rem;"></div>
+    <div id="casePanel" style="display:none;margin-top:1.5rem;padding:1rem;background:#f8fafc;border-radius:10px;border:1px solid var(--border);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+        <div style="font-size:13px;font-weight:600;color:var(--text)" id="casePanelTitle">Cases</div>
+        <button onclick="document.getElementById('casePanel').style.display='none'" style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:18px;">✕</button>
+      </div>
+      <div id="caseList"></div>
+    </div>
+  </div>
+
   <!-- ALL BOOKINGS -->
   <div class="section-label">Answer Rates Across All Activities</div>
   <div class="grid-2">
@@ -255,7 +290,7 @@ const SHEETS = {
   salesforce: { gid: '76431502',   dateCol: 'Created Date' },
   km1:        { gid: '797427725',  dateCol: 'SMS Sending Date' },
   pms:        { gid: '689615837',  dateCol: 'Modified' },
-  d1:         { gid: '1326391719', dateCol: 'Date Due in' },
+  d1:         { gid: '1326391719', dateCol: 'Date Created' },
 };
 
 // State
@@ -310,7 +345,7 @@ const HEADERS = {
   salesforce: ['Account Name','Stage','Created Date','Mobile (English)','Sub Stage','Substage Reason'],
   km1:        ['SMS Sending Date','Customer Name','Mobile','Email','Brand','Model','Description','Model Year','Status','Booked?','If no, why?','Branch'],
   pms:        ['Customer Name','Mobile','14 DYS SMS Date','30 DYS SMS Date','Brand','Model','Model Year','VIN','Next Service Date','Status','Booked?','Booking Branch','If no,Why?','Modified'],
-  d1:         ['Branch','Date Due in','Customer Name','Phone','Brand','Stuats','Customer Attented?','If yes? Satisfied?','If not Satisfied, why?','Why didn\'t attend?','Rescheduled?','Why didn\'t reschedule?','Booking Branch'],
+  d1:         ['Branch','WIP','Service Adviser','Customer Name','Phone','Brand','Date Created','Status','Customer Attented?','If yes? Satisfied?','If not Satisfied, why?','Why didn\'t attend?','Rescheduled?','Why didn\'t reschedule?','Booking Branch','Comment'],
 };
 
 // Fetch CSV via gviz
@@ -502,7 +537,7 @@ function render() {
 
   // ── D+1 ──
   const d1Total    = d1.length;
-  const d1Ans      = d1.filter(r => (r['Stuats']||'').trim() === 'Responded').length;
+  const d1Ans      = d1.filter(r => (r['Status']||'').trim() === 'Responded').length;
   const d1NoAns    = d1Total - d1Ans;
   const d1Attended = d1.filter(r => (r['Customer Attented?']||'').trim() === 'Yes').length;
   const d1NotAtt   = d1.filter(r => (r['Customer Attented?']||'').trim() === 'No').length;
@@ -540,6 +575,95 @@ function render() {
   const _el_d1WhyNot = document.getElementById('d1WhyNot'); if(_el_d1WhyNot) _el_d1WhyNot.innerHTML = barList(topReasons(d1NotResArr, "Why didn't reschedule?"), '#d03535');
 
   // ── ALL ACTIVITIES ──
+  // ── PIVOT: NOT SATISFIED BY BRANCH ──
+  const unsatCases = d1.filter(r => (r['If yes? Satisfied?']||'').trim() === 'No');
+  renderPivot(unsatCases);
+  renderAllBookings(webBooked, sfWon, d1Res, pmsBooked, kmBooked, webNotBook, sfLost, d1NotRes, pmsNotBook, kmNotBook);
+}
+
+function renderPivot(cases) {
+  const pivot = document.getElementById('pivotTable');
+  if (!pivot) return;
+  if (!cases.length) { pivot.innerHTML = '<div style="color:var(--text3);font-size:12px;">No data</div>'; return; }
+
+  // Get all unique branches and reasons
+  const branches = [...new Set(cases.map(r => (r['Branch']||'').trim()))].filter(Boolean).sort();
+  const reasons  = [...new Set(cases.map(r => (r['If not Satisfied, why?']||'').trim()))].filter(Boolean).sort();
+
+  // Build pivot data
+  const data = {};
+  cases.forEach(r => {
+    const b = (r['Branch']||'').trim();
+    const re = (r['If not Satisfied, why?']||'').trim();
+    if (!b || !re) return;
+    if (!data[b]) data[b] = {};
+    data[b][re] = (data[b][re] || []);
+    data[b][re].push(r);
+  });
+
+  // Row totals
+  const branchTotals = {};
+  branches.forEach(b => { branchTotals[b] = Object.values(data[b]||{}).reduce((s,a)=>s+a.length,0); });
+  const colTotals = {};
+  reasons.forEach(re => { colTotals[re] = branches.reduce((s,b)=>s+(data[b]&&data[b][re]?data[b][re].length:0),0); });
+  const grandTotal = cases.length;
+
+  // Color based on value
+  function cellColor(n) { return n >= 4 ? 'high' : n >= 2 ? 'mid' : 'low'; }
+
+  let html = '<table class="pivot-table"><thead><tr><th>Branch Reason</th>';
+  reasons.forEach(re => { html += `<th>${re}</th>`; });
+  html += '<th style="background:#c02020;">Total</th></tr></thead><tbody>';
+
+  branches.forEach(b => {
+    html += `<tr><td>${b}</td>`;
+    reasons.forEach(re => {
+      const arr = (data[b]&&data[b][re]) || [];
+      if (arr.length) {
+        html += `<td><span class="pivot-cell ${cellColor(arr.length)}" onclick="showCases('${b.replace(/'/g,"\\'")}','${re.replace(/'/g,"\\'")}',RAW.d1)">${arr.length}</span></td>`;
+      } else {
+        html += '<td></td>';
+      }
+    });
+    html += `<td style="font-weight:700;color:#c02020;">${branchTotals[b]}</td></tr>`;
+  });
+
+  // Grand total row
+  html += '<tr class="pivot-total"><td>Grand Total</td>';
+  reasons.forEach(re => { html += `<td>${colTotals[re]||''}</td>`; });
+  html += `<td>${grandTotal}</td></tr>`;
+  html += '</tbody></table>';
+  pivot.innerHTML = html;
+}
+
+function showCases(branch, reason, d1data) {
+  const { from, to } = getFilters();
+  const filtered = d1data.filter(r =>
+    inRange(r['Date Due in'], from, to) &&
+    (r['Branch']||'').trim() === branch &&
+    (r['If not Satisfied, why?']||'').trim() === reason &&
+    (r['If yes? Satisfied?']||'').trim() === 'No'
+  );
+
+  const panel = document.getElementById('casePanel');
+  const list  = document.getElementById('caseList');
+  document.getElementById('casePanelTitle').textContent = `${branch} · ${reason} (${filtered.length} cases)`;
+
+  list.innerHTML = filtered.map(r => `
+    <div class="case-item">
+      <div class="case-branch">${r['Branch']||''} · ${r['Booking Branch']||''}</div>
+      <div class="case-customer">${r['Customer Name']||''} <span style="color:var(--text3);font-size:11px;">${r['Phone']||''}</span></div>
+      <div class="case-reason">⚠ ${r['If not Satisfied, why?']||''}</div>
+      ${r['Comment'] ? `<div class="case-comment">💬 ${r['Comment']}</div>` : ''}
+      <div class="case-meta">${r['Brand']||''} · ${r['Date Due in']||''} · Advisor: ${r['Service Advisor']||'—'}</div>
+    </div>
+  `).join('') || '<div style="color:var(--text3);">No cases</div>';
+
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function renderAllBookings(webBooked, sfWon, d1Res, pmsBooked, kmBooked, webNotBook, sfLost, d1NotRes, pmsNotBook, kmNotBook) {
   // ── ALL BOOKINGS ──
   const totalBooked    = webBooked + sfWon + d1Res + pmsBooked + kmBooked;
   const totalNotBooked = webNotBook + sfLost + d1NotRes + pmsNotBook + kmNotBook;
