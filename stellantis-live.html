@@ -99,16 +99,17 @@ main{max-width:1400px;margin:0 auto;padding:1.5rem 2.5rem}
 
 /* PIVOT TABLE */
 .pivot-table{width:100%;border-collapse:collapse;font-size:12px;min-width:700px}
-.pivot-table th{background:#1e6fbf;color:#fff;padding:8px 10px;text-align:center;font-weight:600;font-size:11px;white-space:nowrap;position:sticky;top:0}
-.pivot-table th:first-child{text-align:left;min-width:130px}
+.pivot-table th{background:#1e6fbf;color:#fff;padding:8px 10px;text-align:center;font-weight:600;font-size:11px;white-space:nowrap}
+.pivot-table th:first-child{text-align:left;min-width:130px;position:sticky;left:0;z-index:3;background:#1e6fbf}
 .pivot-table td{padding:7px 10px;text-align:center;border-bottom:1px solid var(--border);color:var(--text2)}
-.pivot-table td:first-child{text-align:left;font-weight:500;color:var(--text);background:#fafbfc}
+.pivot-table td:first-child{text-align:left;font-weight:500;color:var(--text);background:#fafbfc;position:sticky;left:0;z-index:1;border-right:2px solid var(--border)}
 .pivot-table tr:hover td{background:#f0f4f9}
+.pivot-table tr:hover td:first-child{background:#e8eef5}
 .pivot-cell{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;font-weight:700;color:#fff;cursor:pointer;transition:transform 0.1s}
 .pivot-cell:hover{transform:scale(1.15)}
 .pivot-cell.high{background:#e03535}.pivot-cell.mid{background:#f0a500}.pivot-cell.low{background:#f0c040}
 .pivot-total td{background:#fff3f3;font-weight:700;color:#c02020;border-top:2px solid #e03535}
-.pivot-total td:first-child{color:#c02020}
+.pivot-total td:first-child{color:#c02020;background:#fff3f3}
 /* CASE PANEL */
 .case-item{padding:10px 12px;border-radius:8px;border:1px solid var(--border);margin-bottom:8px;background:#fff}
 .case-branch{font-size:11px;font-weight:600;color:var(--blue);margin-bottom:3px}
@@ -236,10 +237,12 @@ footer{text-align:center;padding:1.25rem;color:#4a5a72;font-size:13px;border-top
 
   <!-- PIVOT: NOT SATISFIED BY BRANCH -->
   <div class="section-label">Reasons Not Satisfied — Pivot by Branch</div>
-  <div class="card" style="margin-bottom:2rem;overflow-x:auto;">
+  <div class="card" style="margin-bottom:2rem;">
     <div class="card-title">D+1 — Not Satisfied Cases</div>
     <div class="card-sub">Attended → Not satisfied journey · click a number to view case details</div>
-    <div id="pivotTable" style="margin-top:1rem;"></div>
+    <div style="overflow-x:auto;margin-top:1rem;border-radius:8px;border:1px solid var(--border);">
+      <div id="pivotTable"></div>
+    </div>
     <div id="casePanel" style="display:none;margin-top:1.5rem;padding:1rem;background:#f8fafc;border-radius:10px;border:1px solid var(--border);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
         <div style="font-size:13px;font-weight:600;color:var(--text)" id="casePanelTitle">Cases</div>
@@ -537,8 +540,8 @@ function render() {
 
   // ── D+1 ──
   const d1Total    = d1.length;
-  const d1Ans      = d1.filter(r => (r['Status']||'').trim() === 'Responded').length;
-  const d1NoAns    = d1Total - d1Ans;
+  const d1Ans   = d1.filter(r => (r['Status']||'').trim() === 'Responded').length;
+  const d1NoAns = d1.filter(r => (r['Status']||'').trim() === 'Did not Respond').length;
   const d1Attended = d1.filter(r => (r['Customer Attented?']||'').trim() === 'Yes').length;
   const d1NotAtt   = d1.filter(r => (r['Customer Attented?']||'').trim() === 'No').length;
   const d1Sat      = d1.filter(r => (r['If yes? Satisfied?']||'').trim() === 'Yes').length;
