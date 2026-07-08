@@ -652,13 +652,15 @@ function showCases(branch, reason, d1data) {
   const list  = document.getElementById('caseList');
   document.getElementById('casePanelTitle').textContent = `${branch} · ${reason} (${filtered.length} cases)`;
 
-  list.innerHTML = filtered.map(r => `
+  list.innerHTML = filtered.map((r, i) => `
     <div class="case-item">
-      <div class="case-branch">${r['Branch']||''} · ${r['Booking Branch']||''}</div>
-      <div class="case-customer">${r['Customer Name']||''} <span style="color:var(--text3);font-size:11px;">${r['Phone']||''}</span></div>
-      <div class="case-reason">⚠ ${r['If not Satisfied, why?']||''}</div>
-      ${r['Comment'] ? `<div class="case-comment">💬 ${r['Comment']}</div>` : ''}
-      <div class="case-meta">${r['Brand']||''} · ${r['Date Due in']||''} · Advisor: ${r['Service Advisor']||'—'}</div>
+      <div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1px;margin-bottom:6px;">CASE ${i+1}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="background:#f0f4f9;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--text)">${r['Branch']||''}</span>
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${r['If not Satisfied, why?']||''}</span>
+      </div>
+      <div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1px;margin-bottom:4px;">COMMENT</div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;color:${r['Comment']?'var(--text2)':'var(--text3)'};font-style:${r['Comment']?'normal':'italic'}">${r['Comment']||'No comment'}</div>
     </div>
   `).join('') || '<div style="color:var(--text3);">No cases</div>';
 
